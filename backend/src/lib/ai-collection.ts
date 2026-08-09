@@ -58,11 +58,10 @@ function pickString(obj: Record<string, unknown>, keys: string[]): string | null
 
 function detectPaid(raw: unknown): { isPaid: boolean; status: string | null } {
   const root = asRecord(raw);
+  // Prefer nested payment payload — root `success: true` only means the API call worked.
   const nested = asRecord(root.data ?? root.payment ?? root.result ?? root.transaction ?? {});
-  const candidates = [root, nested];
-
-  for (const obj of candidates) {
-    const status = pickString(obj, [
+  const status =
+    pickString(nested, [
       "status",
       "payment_status",
       "Payment_status",
@@ -70,30 +69,35 @@ function detectPaid(raw: unknown): { isPaid: boolean; status: string | null } {
       "Transaction_status",
       "result",
       "Result",
-    ]);
+    ]) ??
+    pickString(root, ["payment_status", "Payment_status", "transaction_status", "Transaction_status"]);
 
-    const paidFlag =
-      obj.paid === true ||
-      obj.is_paid === true ||
-      obj.success === true ||
-      String(obj.Payment_status ?? "").toLowerCase() === "paid";
+  if (nested.paid === true || nested.is_paid === true) {
+    return { isPaid: true, status: status ?? "paid" };
+  }
 
-    if (status) {
-      const normalized = status.toLowerCase();
-      if (["paid", "success", "successful", "captured", "completed", "ok"].includes(normalized)) {
-        return { isPaid: true, status };
-      }
-      if (["failed", "fail", "cancelled", "canceled", "expired", "declined"].includes(normalized)) {
-        return { isPaid: false, status };
-      }
+  if (status) {
+    const normalized = status.toLowerCase().trim();
+    if (
+      ["paid", "success", "successful", "captured", "completed", "payment successful"].includes(
+        normalized,
+      )
+    ) {
+      return { isPaid: true, status };
     }
-
-    if (paidFlag) {
-      return { isPaid: true, status: status ?? "paid" };
+    // Explicit pending / unused link states from AI Collection
+    if (
+      ["link not used", "pending", "unpaid", "not paid", "awaiting payment", "created"].includes(
+        normalized,
+      )
+    ) {
+      return { isPaid: false, status };
+    }
+    if (["failed", "fail", "cancelled", "canceled", "expired", "declined"].includes(normalized)) {
+      return { isPaid: false, status };
     }
   }
 
-  const status = pickString(root, ["status", "payment_status"]) ?? pickString(nested, ["status", "payment_status"]);
   return { isPaid: false, status };
 }
 
