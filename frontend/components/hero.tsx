@@ -12,6 +12,9 @@ import { useLanguage } from './language_provider'
 import { scrollToSection } from '@/lib/scroll'
 import type { CopyKey } from '@/lib/copy'
 
+const HERO_SUBJECT = '/octopus_hero.png'
+const HERO_SUBJECT_NAME = 'octopus_hero.png'
+
 const markers: { key: CopyKey; Icon: typeof IconUsers }[] = [
   { key: 'markerOne', Icon: IconUsers },
   { key: 'markerTwo', Icon: IconCode },
@@ -74,26 +77,35 @@ export function Hero() {
 function HeroVisual() {
   const { text } = useLanguage()
   const [missing, setMissing] = useState(false)
+  const isDev = process.env.NODE_ENV === 'development'
 
   if (missing) {
     return (
       <div
-        className="image_placeholder h-52 w-52 sm:h-64 sm:w-64 md:h-80 md:w-80"
+        className={`hero_visual image_placeholder h-52 w-52 sm:h-64 sm:w-64 md:h-80 md:w-80${
+          isDev ? ' image_placeholder_dev' : ''
+        }`}
         role="img"
         aria-label={text('heroVisualAlt')}
-      />
+      >
+        {isDev ? <span className="image_placeholder_label">{HERO_SUBJECT_NAME}</span> : null}
+      </div>
     )
   }
 
+  // The loaded subject sits directly on the hero background. No glow, shadow,
+  // filter, or wrapper paint. The PNG is transparent and pre lit.
   return (
-    <Image
-      src="/octopus_hero.png"
-      alt={text('heroVisualAlt')}
-      width={520}
-      height={520}
-      priority
-      onError={() => setMissing(true)}
-      className="h-52 w-52 object-contain sm:h-64 sm:w-64 md:h-80 md:w-80"
-    />
+    <div className="hero_visual h-52 w-52 sm:h-64 sm:w-64 md:h-80 md:w-80">
+      <Image
+        src={HERO_SUBJECT}
+        alt={text('heroVisualAlt')}
+        width={520}
+        height={520}
+        priority
+        onError={() => setMissing(true)}
+        className="hero_visual_image"
+      />
+    </div>
   )
 }

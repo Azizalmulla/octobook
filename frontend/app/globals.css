@@ -385,8 +385,11 @@ html[lang='ar'] .price {
   color: var(--text-on-dark-soft);
 }
 
-/* placeholder that holds the space of an image that is not uploaded yet */
+/* implements [S5.11] placeholder for an image that is not uploaded yet */
 .image_placeholder {
+  position: relative;
+  display: grid;
+  place-items: center;
   background:
     radial-gradient(
       60% 50% at 50% 42%,
@@ -399,6 +402,52 @@ html[lang='ar'] .price {
       transparent 72%
     );
   border-radius: 1.5rem;
+}
+
+/* development only: make a missing asset obvious, not a silent glow */
+.image_placeholder_dev {
+  border: 1px dashed color-mix(in srgb, var(--neutral) 45%, transparent);
+}
+
+.image_placeholder_label {
+  position: relative;
+  z-index: 1;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--neutral) 70%, transparent);
+  text-align: center;
+  padding: 0 0.75rem;
+  word-break: break-all;
+}
+
+html[lang='ar'] .image_placeholder_label {
+  letter-spacing: normal;
+}
+
+/* hero subject wrapper: layout only, no paint behind the image */
+.hero_visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.hero_visual_image {
+  display: block;
+  height: auto;
+  width: 13rem;
+  object-fit: contain;
+}
+
+@media (min-width: 640px) {
+  .hero_visual_image {
+    width: 16rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero_visual_image {
+    width: 20rem;
+  }
 }
 
 .spin {

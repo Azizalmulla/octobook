@@ -32,6 +32,11 @@ Tests: vitest for the phone normaliser, amount formatter, and payment gate.
 Environment: NEXT_PUBLIC_API_BASE_URL, local value http://localhost:3001.
 No secret variable exists in this app.
 
+Local setup: the Next.js app root is frontend/ inside the octobook repo.
+Always run npm install and npm run dev from that folder, never from the
+repository root. Exact path on this machine:
+/Users/qattan/Desktop/octo/octopus-ai-webinar/frontend
+
 ## 2. File and folder map
 
     app/layout.tsx              root layout, font link, metadata, html lang
@@ -213,14 +218,26 @@ and never redrawn.
 | public/icon_512.png | manifest icon | yes |
 | public/apple_icon.png | apple touch icon on solid --shade ground | yes |
 | public/favicon.ico | 16, 32, and 48 sizes | yes |
-| public/octopus_hero.png | hero subject, transparent | soft token tinted placeholder until uploaded |
+| public/octopus_hero.png | hero subject, transparent and pre lit | yes |
 | public/hero_bg.png | hero background | yes |
 | public/sessions_bg.png | session section background | yes |
 | public/form_bg.png | registration section background | yes |
 | public/payment_bg.png | fee and payment section background | yes |
 | public/og_share.png | social preview, not the logo | yes |
 
-The logo never appears in the navigation and never appears in the hero.
+Hero subject wiring:
+
+| Item | Value |
+|:--|:--|
+| Public path on disk | frontend/public/octopus_hero.png |
+| Served URL | /octopus_hero.png |
+| Component | components/hero.tsx HeroVisual |
+| next/image | explicit width 520 height 520, priority, alt from copy.heroVisualAlt |
+| Missing behaviour | onError swaps to token tinted placeholder; in development only, dashed border from color-mix on var(--neutral) and centered filename label; production stays silent |
+| Loaded paint | none: no glow, no shadow, no wrapper background, no filter. The image sits directly on the hero background because the source PNG is transparent and pre lit |
+
+The logo never appears in the navigation and never appears in the hero. Never
+solve a missing octopus_hero.png by placing logo.png in the hero.
 
 ## 13. Accessibility floor
 
@@ -251,9 +268,15 @@ call the payment gateway from the browser. Never send an amount from the
 browser. Never hold a token in the browser. Never hardcode sessions, fees, or
 option labels when the API answers. Never show a confirmation on redirect
 alone. Never trust a query string parameter to decide payment status. Never
-multiply cards. Never mention Vercel.
+multiply cards. Never mention Vercel. Never add a glow, shadow, filter, or
+background layer behind the hero octopus image. The source PNG is transparent
+and pre lit, so any halo fights the mark and reads as a smudge on the dark
+ground.
 
 ## 16. Change log
 
 2026 08 09 | sections 1 to 15 | Created this file and built the first pass of the landing route and the payment return route | Initial delivery of [S4] through [S17] | pending
 2026 08 09 | sections 1, 2, 5, 10, 12 | Moved app under frontend/, swapped to Google Fonts link, logo pipeline, return polling, SQL migration, tests | Align delivery with [S5] [S12] [S14] [S18] [S19] | pending
+2026 08 09 | section 1 | Documented that npm run dev must be run from frontend/ | Stop repeating the root ENOENT on package.json | pending
+2026 08 09 | section 12 | Honest missing hero placeholder, under image glow, asset wiring row | octopus_hero.png was absent and looked like intentional glow | pending
+2026 08 09 | sections 12, 15 | Removed hero subject glow and recorded no paint rule | Real transparent pre lit PNG was fighting the code drawn halo | pending
