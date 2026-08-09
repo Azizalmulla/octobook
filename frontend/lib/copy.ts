@@ -151,8 +151,8 @@ export const copy = {
 
   returnChecking: { en: 'Checking your payment', ar: 'جارٍ التحقق من الدفع' },
   returnCheckingNote: {
-    en: 'Keep this page open while the gateway settles the payment.',
-    ar: 'أبقِ هذه الصفحة مفتوحة حتى تكتمل تسوية الدفع.',
+    en: 'Finish payment in the checkout tab. This page updates automatically when it settles.',
+    ar: 'أكمل الدفع في تبويب الدفع. تتحدث هذه الصفحة تلقائياً بعد التسوية.',
   },
   returnPaidHeading: { en: 'Your seat is confirmed.', ar: 'تم تأكيد مقعدك.' },
   returnPaymentNumber: { en: 'Payment number', ar: 'رقم الدفع' },
@@ -165,9 +165,10 @@ export const copy = {
   },
   returnPendingHeading: { en: 'Payment is still settling.', ar: 'الدفع في طور التسوية.' },
   returnPendingNote: {
-    en: 'Your seat is confirmed automatically once the payment settles. Keep your reference.',
-    ar: 'سيتم تأكيد مقعدك تلقائياً بعد تسوية الدفع. احفظ رقم مرجعك.',
+    en: 'Complete checkout in the payment tab. Your seat confirms here automatically after payment.',
+    ar: 'أكمل الدفع في تبويب الدفع. يتأكد مقعدك هنا تلقائياً بعد الدفع.',
   },
+  returnOpenCheckout: { en: 'Open payment page', ar: 'فتح صفحة الدفع' },
   returnFailedHeading: { en: 'The payment did not complete.', ar: 'لم تكتمل عملية الدفع.' },
   returnFailedNote: {
     en: 'No seat is held and no amount was captured. Start again from the form.',

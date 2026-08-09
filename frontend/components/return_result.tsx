@@ -31,15 +31,16 @@ const NOTES: Record<PaymentStatus, CopyKey> = {
   EXPIRED: 'returnFailedNote',
 }
 
-// implements [S14.1] step 15: poll every three seconds for up to sixty seconds
+// implements [S14.1] step 15: poll while the customer finishes checkout
 const POLL_EVERY_MS = 3000
-const POLL_MAX_MS = 60000
+const POLL_MAX_MS = 180000
 
 export function ReturnResult() {
   const { text, lang } = useLanguage()
   const params = useSearchParams()
   const [phase, setPhase] = useState<Phase>('checking')
   const [result, setResult] = useState<PaymentSync | null>(null)
+  const [paymentLink, setPaymentLink] = useState('')
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const startedAt = useRef(0)
 
@@ -52,6 +53,14 @@ export function ReturnResult() {
       return ''
     }
   }, [params])
+
+  useEffect(() => {
+    try {
+      setPaymentLink(window.sessionStorage.getItem('octobook_payment_link') ?? '')
+    } catch {
+      setPaymentLink('')
+    }
+  }, [])
 
   useEffect(() => {
     if (!trackId) {
@@ -101,6 +110,17 @@ export function ReturnResult() {
             {phase === 'checking' ? <Checking /> : null}
             {phase === 'neutral' ? <Neutral /> : null}
             {phase === 'result' && result ? <Result result={result} /> : null}
+
+            {paymentLink && (phase === 'checking' || result?.status === 'PENDING_PAYMENT') ? (
+              <a
+                href={paymentLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="action"
+              >
+                {text('returnOpenCheckout')}
+              </a>
+            ) : null}
 
             <Link href="/" className="action">
               {text('returnBackAction')}

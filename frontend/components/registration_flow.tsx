@@ -162,15 +162,18 @@ export function RegistrationFlow() {
         return
       }
 
-      // implements [S14.2] the identifier is kept so /return can read it back
+      // Keep identifiers for /return. Gateway success URL currently opens a broken
+      // WhatsApp link (merchant setting), so we stay on /return and poll instead.
       try {
         window.sessionStorage.setItem('octobook_track_id', created.trackId)
         window.sessionStorage.setItem('octobook_reference', created.reference)
+        window.sessionStorage.setItem('octobook_payment_link', created.paymentLink)
       } catch {
         // storage is not available, the query string carries the identifier instead
       }
 
-      window.location.href = created.paymentLink
+      window.open(created.paymentLink, '_blank', 'noopener,noreferrer')
+      window.location.href = `/return?trackId=${encodeURIComponent(created.trackId)}`
     } catch (error) {
       if (error instanceof ApiError) {
         setServerErrors(mapServerFields(error.fields))
