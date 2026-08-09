@@ -14,7 +14,10 @@ const nextConfig = {
   },
   // implements [S15.7] baseline response headers
   async headers() {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001'
+    const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').trim()
+    const connectSrc = ["'self'", 'https://r2p.link', 'https://ai-collection.com', apiBase]
+      .filter(Boolean)
+      .join(' ')
     return [
       {
         source: '/:path*',
@@ -34,7 +37,7 @@ const nextConfig = {
               "img-src 'self' data: blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' data: https://fonts.gstatic.com",
-              `connect-src 'self' ${apiBase}`,
+              `connect-src ${connectSrc}`,
               "frame-ancestors 'self'",
             ].join('; '),
           },

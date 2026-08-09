@@ -11,7 +11,7 @@ import type {
 } from './types'
 import { normaliseNationalNumber, digitsOnly } from './phone'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001'
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
 const TIMEOUT_MS = 20000
 
 export class ApiError extends Error {
