@@ -185,10 +185,7 @@ export class AiCollectionClient {
       body.success_url = input.callbackUrl
       body.CallbackUrl = input.callbackUrl
     }
-    if (input.registrationId) {
-      body.udf = input.registrationId
-      body.UserDefinedField = input.registrationId
-    }
+    // Do not send udf/UserDefinedField: AI Collection requires 1-15 alphanumeric chars only.
 
     const raw = await this.request('create_payment', body)
     const data = asRecord(raw)
