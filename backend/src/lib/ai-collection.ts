@@ -1,0 +1,199 @@
+import type { Env } from "../config/env.js";
+import { AppError } from "./errors.js";
+
+export type AiCollectionGatewayId = 1 | 2;
+
+export type CreatePaymentInput = {
+  amount: string;
+  customerPhone: string;
+  customerName?: string;
+  customerEmail?: string;
+  language?: "en" | "ar";
+  paymentGatewaysId?: AiCollectionGatewayId;
+};
+
+export type CreatePaymentResult = {
+  success: boolean;
+  errors: unknown;
+  trackId: string;
+  paymentLink: string;
+  raw: unknown;
+};
+
+export type PaymentStatusResult = {
+  trackId: string;
+  isPaid: boolean;
+  status: string | null;
+  raw: unknown;
+};
+
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/[^\d]/g, "");
+  if (!digits) {
+    throw new AppError(400, "WhatsApp number is invalid", "INVALID_PHONE");
+  }
+  return digits;
+}
+
+function formatAmount(amount: string): string {
+  const value = Number(amount);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new AppError(500, "Invalid registration fee configuration", "INVALID_AMOUNT");
+  }
+  return value.toFixed(3);
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function pickString(obj: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
+  }
+  return null;
+}
+
+function detectPaid(raw: unknown): { isPaid: boolean; status: string | null } {
+  const root = asRecord(raw);
+  const nested = asRecord(root.data ?? root.payment ?? root.result ?? root.transaction ?? {});
+  const candidates = [root, nested];
+
+  for (const obj of candidates) {
+    const status = pickString(obj, [
+      "status",
+      "payment_status",
+      "Payment_status",
+      "transaction_status",
+      "Transaction_status",
+      "result",
+      "Result",
+    ]);
+
+    const paidFlag =
+      obj.paid === true ||
+      obj.is_paid === true ||
+      obj.success === true ||
+      String(obj.Payment_status ?? "").toLowerCase() === "paid";
+
+    if (status) {
+      const normalized = status.toLowerCase();
+      if (["paid", "success", "successful", "captured", "completed", "ok"].includes(normalized)) {
+        return { isPaid: true, status };
+      }
+      if (["failed", "fail", "cancelled", "canceled", "expired", "declined"].includes(normalized)) {
+        return { isPaid: false, status };
+      }
+    }
+
+    if (paidFlag) {
+      return { isPaid: true, status: status ?? "paid" };
+    }
+  }
+
+  const status = pickString(root, ["status", "payment_status"]) ?? pickString(nested, ["status", "payment_status"]);
+  return { isPaid: false, status };
+}
+
+export class AiCollectionClient {
+  constructor(private readonly env: Env) {}
+
+  private get token(): string {
+    const token = this.env.AI_COLLECTION_BEARER_TOKEN.trim();
+    if (!token) {
+      throw new AppError(
+        503,
+        "AI Collection is not configured. Set AI_COLLECTION_BEARER_TOKEN.",
+        "PAYMENT_NOT_CONFIGURED",
+      );
+    }
+    return token;
+  }
+
+  private async request(path: string, body: Record<string, unknown>): Promise<unknown> {
+    const url = `${this.env.AI_COLLECTION_BASE_URL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (error) {
+      throw new AppError(502, "Failed to reach AI Collection", "PAYMENT_PROVIDER_UNREACHABLE", error);
+    }
+
+    const text = await response.text();
+    let json: unknown = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = { raw: text };
+    }
+
+    if (!response.ok) {
+      throw new AppError(
+        502,
+        `AI Collection request failed (${response.status})`,
+        "PAYMENT_PROVIDER_ERROR",
+        json,
+      );
+    }
+
+    return json;
+  }
+
+  async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+    const body: Record<string, unknown> = {
+      amount: formatAmount(input.amount),
+      customer_phone: normalizePhone(input.customerPhone),
+    };
+
+    if (input.customerName) body.Customer_name = input.customerName;
+    if (input.customerEmail) body.customer_email = input.customerEmail;
+    if (input.language) body.language = input.language;
+    if (input.paymentGatewaysId) body.Payment_gateways_id = input.paymentGatewaysId;
+
+    const raw = await this.request("create_payment", body);
+    const data = asRecord(raw);
+
+    const success = data.success === true || data.success === "true" || data.success === 1;
+    const trackId = pickString(data, ["trackId", "track_id", "TrackId", "id"]);
+    const paymentLink = pickString(data, ["payment_link", "paymentLink", "Payment_link", "link"]);
+
+    if (!success || !trackId || !paymentLink) {
+      throw new AppError(
+        502,
+        "AI Collection did not return a valid payment link",
+        "PAYMENT_CREATE_FAILED",
+        raw,
+      );
+    }
+
+    return {
+      success: true,
+      errors: data.errors ?? false,
+      trackId,
+      paymentLink,
+      raw,
+    };
+  }
+
+  async getPaymentStatus(trackId: string): Promise<PaymentStatusResult> {
+    const raw = await this.request("get_custom_payments", { trackId });
+    const detected = detectPaid(raw);
+    return {
+      trackId,
+      isPaid: detected.isPaid,
+      status: detected.status,
+      raw,
+    };
+  }
+}

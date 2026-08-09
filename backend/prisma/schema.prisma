@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BusinessType {
+  TECHNOLOGY_SOFTWARE
+  DIGITAL_AGENCY
+  AI_AUTOMATION
+  MARKETING_AGENCY
+  STARTUP
+  OTHER
+}
+
+enum BuildGoal {
+  OWN_AI_AUTOMATION_PLATFORM
+  ADD_WHATSAPP_API
+  OFFER_AI_SOLUTIONS
+  LAUNCH_SAAS_PRODUCT
+  EXPLORE_BUSINESS_OPPORTUNITY
+  STILL_EXPLORING
+}
+
+enum RegistrationStatus {
+  PENDING_PAYMENT
+  PAID
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentGateway {
+  KNET
+  CARD
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  startsAt    DateTime
+  endsAt      DateTime
+  timezone    String   @default("Asia/Kuwait")
+  capacity    Int?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  registrations Registration[]
+}
+
+model Registration {
+  id              String             @id @default(cuid())
+  fullName        String
+  whatsappNumber  String
+  email           String
+  companyName     String
+  country         String
+  businessType    BusinessType
+  hasB2bClients   Boolean
+  buildGoal       BuildGoal
+  locale          String             @default("en")
+  status          RegistrationStatus @default(PENDING_PAYMENT)
+  amountKwd       Decimal            @db.Decimal(10, 3) @default(40.000)
+  sessionId       String
+  session         Session            @relation(fields: [sessionId], references: [id])
+  payment         Payment?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([sessionId])
+}
+
+model Payment {
+  id               String          @id @default(cuid())
+  registrationId   String          @unique
+  registration     Registration    @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  provider         String          @default("ai_collection")
+  gateway          PaymentGateway  @default(KNET)
+  amountKwd        Decimal         @db.Decimal(10, 3)
+  trackId          String?         @unique
+  paymentLink      String?
+  providerStatus   String?
+  providerPayload  Json?
+  paidAt           DateTime?
+  lastCheckedAt    DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([trackId])
+}
