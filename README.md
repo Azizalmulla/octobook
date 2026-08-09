@@ -79,6 +79,9 @@ or
 
 Seat is confirmed when `registration.status === "PAID"`.
 
+On `PAID`, backend also sends the approved WhatsApp confirmation template to `whatsappNumber`
+(`{{1}}` name, `{{2}}` session, `{{3}}` amount).
+
 ## Payment test cards (AI Collection)
 
 **KNET**

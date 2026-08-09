@@ -14,6 +14,11 @@ const envSchema = z.object({
     .default("https://ai-collection.com/businessapi"),
   AI_COLLECTION_BEARER_TOKEN: z.string().optional().default(""),
   AI_COLLECTION_DEFAULT_GATEWAY_ID: z.coerce.number().int().min(1).max(2).default(1),
+  WHATSAPP_TEMPLATE_URL: z
+    .string()
+    .url()
+    .default("https://app.ai-octopus.com/template/sent"),
+  WHATSAPP_TEMPLATE_TOKEN: z.string().optional().default(""),
 });
 
 export type Env = z.infer<typeof envSchema>;

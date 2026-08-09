@@ -4,6 +4,7 @@ import type { Env } from "../../config/env.js";
 import { AiCollectionClient, type AiCollectionGatewayId } from "../../lib/ai-collection.js";
 import { AppError } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
+import { WhatsappTemplateClient } from "../../lib/whatsapp.js";
 import type { CreateRegistrationInput } from "./schema.js";
 
 type RegistrationWithRelations = Registration & {
@@ -13,6 +14,24 @@ type RegistrationWithRelations = Registration & {
 
 function gatewayToProviderId(gateway: "KNET" | "CARD"): AiCollectionGatewayId {
   return gateway === "CARD" ? 2 : 1;
+}
+
+function formatSessionLabel(session: Session, locale: string): string {
+  const dateLocale = locale === "ar" ? "ar-KW" : "en-GB";
+  const date = new Intl.DateTimeFormat(dateLocale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: session.timezone || "Asia/Kuwait",
+  }).format(session.startsAt);
+  const time = new Intl.DateTimeFormat("en-GB", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: session.timezone || "Asia/Kuwait",
+  }).format(session.startsAt);
+  return `${date}, ${time} (GMT+3)`;
 }
 
 function serializeRegistration(registration: RegistrationWithRelations) {
@@ -29,6 +48,8 @@ function serializeRegistration(registration: RegistrationWithRelations) {
     locale: registration.locale,
     status: registration.status,
     amountKwd: registration.amountKwd.toFixed(3),
+    whatsappSentAt: registration.whatsappSentAt?.toISOString() ?? null,
+    whatsappError: registration.whatsappError,
     session: {
       id: registration.session.id,
       slug: registration.session.slug,
@@ -52,9 +73,42 @@ function serializeRegistration(registration: RegistrationWithRelations) {
 
 export class RegistrationService {
   private readonly payments: AiCollectionClient;
+  private readonly whatsapp: WhatsappTemplateClient;
 
   constructor(private readonly env: Env) {
     this.payments = new AiCollectionClient(env);
+    this.whatsapp = new WhatsappTemplateClient(env);
+  }
+
+  private async sendWhatsappConfirmation(registration: RegistrationWithRelations) {
+    if (registration.whatsappSentAt) {
+      return registration;
+    }
+
+    try {
+      await this.whatsapp.sendRegistrationConfirmed({
+        to: registration.whatsappNumber,
+        name: registration.fullName,
+        sessionLabel: formatSessionLabel(registration.session, registration.locale),
+        amountKwd: Number(registration.amountKwd).toFixed(0),
+      });
+
+      return prisma.registration.update({
+        where: { id: registration.id },
+        data: {
+          whatsappSentAt: new Date(),
+          whatsappError: null,
+        },
+        include: { session: true, payment: true },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "WhatsApp send failed";
+      return prisma.registration.update({
+        where: { id: registration.id },
+        data: { whatsappError: message.slice(0, 500) },
+        include: { session: true, payment: true },
+      });
+    }
   }
 
   async create(input: CreateRegistrationInput) {
@@ -182,11 +236,12 @@ export class RegistrationService {
     }
 
     if (payment.registration.status === RegistrationStatus.PAID) {
+      const withWhatsapp = await this.sendWhatsappConfirmation({
+        ...payment.registration,
+        payment,
+      });
       return {
-        registration: serializeRegistration({
-          ...payment.registration,
-          payment,
-        }),
+        registration: serializeRegistration(withWhatsapp),
         refreshed: false,
       };
     }
@@ -223,11 +278,17 @@ export class RegistrationService {
       },
     });
 
+    let registration: RegistrationWithRelations = {
+      ...updatedPayment.registration,
+      payment: updatedPayment,
+    };
+
+    if (nextStatus === RegistrationStatus.PAID) {
+      registration = await this.sendWhatsappConfirmation(registration);
+    }
+
     return {
-      registration: serializeRegistration({
-        ...updatedPayment.registration,
-        payment: updatedPayment,
-      }),
+      registration: serializeRegistration(registration),
       refreshed: true,
       provider: {
         isPaid: status.isPaid,
