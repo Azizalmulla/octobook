@@ -1,8 +1,32 @@
-# Octokiss Backend
+# Octobook
 
-Webinar registration API for **Octopus Ai** with **AI Collection** payments (KWD 40).
+Octopus Ai webinar registration — **Next.js on Vercel** + **Neon Postgres**.
 
-Qattan owns frontend. This repo folder (`backend/`) owns API, DB, and payments.
+Live: https://octobook-pearl.vercel.app
+
+## Stack
+
+- Frontend + API: Next.js App Router (Vercel)
+- DB: Neon Postgres + Prisma
+- Payments: AI Collection
+- WhatsApp confirmation: ai-octopus templates
+
+## Local
+
+```bash
+cd frontend
+cp .env.example .env.local
+# fill DATABASE_URL + payment/whatsapp secrets
+npm install
+npx prisma migrate deploy
+npm run db:seed
+npm run dev
+```
+
+App: `http://localhost:3000` (API is same-origin under `/api/*`)
+
+The older `backend/` Fastify app remains for reference; production uses the Next.js API routes.
+
 
 ## Stack
 
