@@ -1,7 +1,7 @@
 import type { Payment, Registration, Session } from '@prisma/client'
 import { PaymentGateway, RegistrationStatus } from '@prisma/client'
 import { AiCollectionClient, type AiCollectionGatewayId } from './ai-collection'
-import type { ServerEnv } from './env'
+import { getAppUrl, type ServerEnv } from './env'
 import { AppError } from './errors'
 import { prisma } from './prisma'
 import type { CreateRegistrationInput } from './registration-schema'
@@ -170,6 +170,7 @@ export class RegistrationService {
     })
 
     try {
+      const callbackUrl = `${getAppUrl(this.env)}/api/payments/callback?registrationId=${registration.id}`
       const payment = await this.payments.createPayment({
         amount,
         customerPhone: input.whatsappNumber,
@@ -177,6 +178,8 @@ export class RegistrationService {
         customerEmail: input.email,
         language: input.locale,
         paymentGatewaysId: gatewayToProviderId(input.paymentGateway),
+        callbackUrl,
+        registrationId: registration.id,
       })
 
       const updated = await prisma.registration.update({
@@ -271,6 +274,23 @@ export class RegistrationService {
     }
 
     return toPaymentSync(registration)
+  }
+
+  async syncPaymentByRegistrationId(registrationId: string) {
+    const registration = await prisma.registration.findUnique({
+      where: { id: registrationId },
+      include: { payment: true },
+    })
+
+    if (!registration) {
+      throw new AppError(404, 'Registration not found', 'REGISTRATION_NOT_FOUND')
+    }
+
+    if (!registration.payment?.trackId) {
+      throw new AppError(409, 'Registration has no payment track id yet', 'PAYMENT_TRACK_MISSING')
+    }
+
+    return this.syncPaymentByTrackId(registration.payment.trackId)
   }
 }
 

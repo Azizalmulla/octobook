@@ -10,6 +10,9 @@ export type CreatePaymentInput = {
   customerEmail?: string
   language?: 'en' | 'ar'
   paymentGatewaysId?: AiCollectionGatewayId
+  /** Where the gateway should send the customer after pay */
+  callbackUrl?: string
+  registrationId?: string
 }
 
 export type CreatePaymentResult = {
@@ -94,6 +97,21 @@ function detectPaid(raw: unknown): { isPaid: boolean; status: string | null } {
     }
   }
 
+  // MyFatoorah payload nested inside AI Collection transaction_response
+  const txnRaw = nested.transaction_response
+  if (typeof txnRaw === 'string') {
+    try {
+      const txn = asRecord(JSON.parse(txnRaw))
+      const data = asRecord(txn.Data)
+      const invoiceStatus = pickString(data, ['InvoiceStatus', 'invoice_status'])
+      if (invoiceStatus && invoiceStatus.toLowerCase() === 'paid') {
+        return { isPaid: true, status: invoiceStatus }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+
   return { isPaid: false, status }
 }
 
@@ -160,6 +178,17 @@ export class AiCollectionClient {
     if (input.customerEmail) body.customer_email = input.customerEmail
     if (input.language) body.language = input.language
     if (input.paymentGatewaysId) body.Payment_gateways_id = input.paymentGatewaysId
+    // AI Collection merchant default currently points at WhatsApp — override per payment.
+    if (input.callbackUrl) {
+      body.callback_url = input.callbackUrl
+      body.return_url = input.callbackUrl
+      body.success_url = input.callbackUrl
+      body.CallbackUrl = input.callbackUrl
+    }
+    if (input.registrationId) {
+      body.udf = input.registrationId
+      body.UserDefinedField = input.registrationId
+    }
 
     const raw = await this.request('create_payment', body)
     const data = asRecord(raw)

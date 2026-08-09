@@ -3,6 +3,8 @@ import { z } from 'zod'
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   REGISTRATION_FEE_KWD: z.string().default('1.000'),
+  APP_URL: z.string().url().optional(),
+  NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
   AI_COLLECTION_BASE_URL: z
     .string()
     .url()
@@ -29,4 +31,11 @@ export function getServerEnv(): ServerEnv {
   }
   cached = parsed.data
   return cached
+}
+
+export function getAppUrl(env: ServerEnv = getServerEnv()): string {
+  return (env.APP_URL || env.NEXT_PUBLIC_SITE_URL || 'https://octobook-pearl.vercel.app').replace(
+    /\/$/,
+    '',
+  )
 }
