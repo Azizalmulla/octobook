@@ -9,28 +9,77 @@ export const businessTypeSchema = z.enum([
   "OTHER",
 ]);
 
-export const buildGoalSchema = z.enum([
-  "OWN_AI_AUTOMATION_PLATFORM",
-  "ADD_WHATSAPP_API",
-  "OFFER_AI_SOLUTIONS",
-  "LAUNCH_SAAS_PRODUCT",
-  "EXPLORE_BUSINESS_OPPORTUNITY",
-  "STILL_EXPLORING",
-]);
+const buildGoalAliases: Record<string, string> = {
+  OWN_AI_AUTOMATION_PLATFORM: "OWN_AI_AUTOMATION_PLATFORM",
+  OWN_PLATFORM: "OWN_AI_AUTOMATION_PLATFORM",
+  ADD_WHATSAPP_API: "ADD_WHATSAPP_API",
+  WHATSAPP_API: "ADD_WHATSAPP_API",
+  OFFER_AI_SOLUTIONS: "OFFER_AI_SOLUTIONS",
+  CLIENT_SOLUTIONS: "OFFER_AI_SOLUTIONS",
+  LAUNCH_SAAS_PRODUCT: "LAUNCH_SAAS_PRODUCT",
+  NEW_SAAS: "LAUNCH_SAAS_PRODUCT",
+  EXPLORE_BUSINESS_OPPORTUNITY: "EXPLORE_BUSINESS_OPPORTUNITY",
+  NEW_OPPORTUNITY: "EXPLORE_BUSINESS_OPPORTUNITY",
+  STILL_EXPLORING: "STILL_EXPLORING",
+};
 
-export const createRegistrationSchema = z.object({
-  fullName: z.string().trim().min(2).max(120),
-  whatsappNumber: z.string().trim().min(8).max(20),
-  email: z.string().trim().email().max(180),
-  companyName: z.string().trim().min(1).max(180),
-  country: z.string().trim().min(2).max(120),
-  businessType: businessTypeSchema,
-  hasB2bClients: z.boolean(),
-  buildGoal: buildGoalSchema,
-  sessionId: z.string().trim().min(1),
-  locale: z.enum(["en", "ar"]).default("en"),
-  paymentGateway: z.enum(["KNET", "CARD"]).default("KNET"),
-});
+export const buildGoalSchema = z
+  .string()
+  .transform((value) => buildGoalAliases[value] ?? value)
+  .pipe(
+    z.enum([
+      "OWN_AI_AUTOMATION_PLATFORM",
+      "ADD_WHATSAPP_API",
+      "OFFER_AI_SOLUTIONS",
+      "LAUNCH_SAAS_PRODUCT",
+      "EXPLORE_BUSINESS_OPPORTUNITY",
+      "STILL_EXPLORING",
+    ]),
+  );
+
+function digitsOnly(value: string): string {
+  return value.replace(/[^\d]/g, "");
+}
+
+export const createRegistrationSchema = z
+  .object({
+    fullName: z.string().trim().min(2).max(120),
+    // Frontend sends country code + national number separately.
+    whatsappCountryCode: z.string().trim().optional(),
+    whatsappNumber: z.string().trim().min(6).max(20),
+    email: z.string().trim().email().max(180),
+    companyName: z.string().trim().min(1).max(180),
+    country: z.string().trim().min(2).max(120),
+    businessType: businessTypeSchema,
+    hasB2bClients: z.boolean(),
+    buildGoal: buildGoalSchema,
+    sessionId: z.string().trim().min(1),
+    locale: z.enum(["en", "ar"]).optional(),
+    language: z.enum(["en", "ar"]).optional(),
+    paymentGateway: z.enum(["KNET", "CARD"]).default("KNET"),
+    idempotencyKey: z.string().trim().min(8).max(120).optional(),
+  })
+  .transform((input) => {
+    const national = digitsOnly(input.whatsappNumber).replace(/^0+/, "");
+    const countryCode = digitsOnly(input.whatsappCountryCode ?? "");
+    const combined =
+      countryCode && !national.startsWith(countryCode) ? `${countryCode}${national}` : national || digitsOnly(input.whatsappNumber);
+
+    return {
+      fullName: input.fullName,
+      whatsappNumber: combined,
+      email: input.email,
+      companyName: input.companyName,
+      country: input.country,
+      businessType: input.businessType,
+      hasB2bClients: input.hasB2bClients,
+      buildGoal: input.buildGoal,
+      sessionId: input.sessionId,
+      locale: input.locale ?? input.language ?? "en",
+      paymentGateway: input.paymentGateway,
+      idempotencyKey: input.idempotencyKey,
+    };
+  });
 
 export type CreateRegistrationInput = z.infer<typeof createRegistrationSchema>;
 

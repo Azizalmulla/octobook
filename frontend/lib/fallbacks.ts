@@ -50,23 +50,27 @@ export const FALLBACK_BUSINESS_TYPES: OptionItem[] = [
 
 export const FALLBACK_BUILD_GOALS: OptionItem[] = [
   {
-    code: 'OWN_PLATFORM',
+    code: 'OWN_AI_AUTOMATION_PLATFORM',
     labelEn: 'Build our own AI and Automation platform',
     labelAr: 'بناء منصة ذكاء اصطناعي وأتمتة خاصة بنا',
   },
   {
-    code: 'WHATSAPP_API',
+    code: 'ADD_WHATSAPP_API',
     labelEn: 'Add WhatsApp API to our services',
     labelAr: 'إضافة WhatsApp API إلى خدماتنا',
   },
   {
-    code: 'CLIENT_SOLUTIONS',
+    code: 'OFFER_AI_SOLUTIONS',
     labelEn: 'Offer AI solutions to our clients',
     labelAr: 'تقديم حلول ذكاء اصطناعي لعملائنا',
   },
-  { code: 'NEW_SAAS', labelEn: 'Launch a new SaaS product', labelAr: 'إطلاق منتج SaaS جديد' },
   {
-    code: 'NEW_OPPORTUNITY',
+    code: 'LAUNCH_SAAS_PRODUCT',
+    labelEn: 'Launch a new SaaS product',
+    labelAr: 'إطلاق منتج SaaS جديد',
+  },
+  {
+    code: 'EXPLORE_BUSINESS_OPPORTUNITY',
     labelEn: 'Explore a new business opportunity',
     labelAr: 'البحث عن فرصة عمل جديدة في هذا المجال',
   },

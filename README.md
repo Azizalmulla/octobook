@@ -11,6 +11,20 @@ Qattan owns frontend. This repo folder (`backend/`) owns API, DB, and payments.
 - PostgreSQL + Prisma
 - AI Collection (`create_payment` + `get_custom_payments`)
 
+## Frontend (Qattan)
+
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Frontend: `http://localhost:3000`  
+API base: `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:3001`)
+
+After payment, open `/return` (track id is stored before redirect).
+
 ## Quick start
 
 ```bash
@@ -19,7 +33,7 @@ docker compose up -d
 
 cd backend
 cp .env.example .env
-# paste AI_COLLECTION_BEARER_TOKEN into .env
+# paste AI_COLLECTION_BEARER_TOKEN and WHATSAPP_TEMPLATE_TOKEN into .env
 
 pnpm install
 pnpm db:generate

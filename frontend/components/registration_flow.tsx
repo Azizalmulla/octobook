@@ -25,10 +25,14 @@ import {
 
 const FAILURE_COPY: Record<string, CopyKey> = {
   VALIDATION_FAILED: 'errorValidationFailed',
+  VALIDATION_ERROR: 'errorValidationFailed',
   SESSION_FULL: 'errorSessionFull',
+  SESSION_NOT_FOUND: 'errorSession',
   ALREADY_REGISTERED: 'errorAlreadyRegistered',
   RATE_LIMITED: 'errorRateLimited',
   PAYMENT_OPEN_FAILED: 'errorPaymentOpen',
+  PAYMENT_CREATE_FAILED: 'errorPaymentOpen',
+  PAYMENT_NOT_CONFIGURED: 'errorPaymentOpen',
   NETWORK_FAILED: 'errorNetwork',
   TIMEOUT: 'errorNetwork',
 }

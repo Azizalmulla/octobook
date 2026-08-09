@@ -34,6 +34,44 @@ function formatSessionLabel(session: Session, locale: string): string {
   return `${date}, ${time} (GMT+3)`;
 }
 
+function formatSessionLabels(session: Session) {
+  return {
+    labelEn: formatSessionLabel(session, "en"),
+    labelAr: formatSessionLabel(session, "ar"),
+  };
+}
+
+function toFrontendPaymentStatus(
+  status: RegistrationStatus,
+): "PENDING_PAYMENT" | "PAID" | "FAILED" | "EXPIRED" {
+  if (status === RegistrationStatus.PAID) return "PAID";
+  if (status === RegistrationStatus.EXPIRED) return "EXPIRED";
+  if (status === RegistrationStatus.PENDING_PAYMENT) return "PENDING_PAYMENT";
+  return "FAILED";
+}
+
+function toCreatedRegistration(registration: RegistrationWithRelations, paymentLink: string, trackId: string) {
+  return {
+    registrationId: registration.id,
+    reference: registration.id,
+    trackId,
+    paymentLink,
+    status: toFrontendPaymentStatus(registration.status),
+  };
+}
+
+function toPaymentSync(registration: RegistrationWithRelations) {
+  return {
+    trackId: registration.payment?.trackId ?? "",
+    reference: registration.id,
+    status: toFrontendPaymentStatus(registration.status),
+    paidAt: registration.payment?.paidAt?.toISOString() ?? null,
+    amount: registration.amountKwd.toFixed(3),
+    currency: "KWD",
+    session: formatSessionLabels(registration.session),
+  };
+}
+
 function serializeRegistration(registration: RegistrationWithRelations) {
   return {
     id: registration.id,
@@ -194,11 +232,7 @@ export class RegistrationService {
         },
       });
 
-      return {
-        registration: serializeRegistration(updated),
-        paymentLink: payment.paymentLink,
-        trackId: payment.trackId,
-      };
+      return toCreatedRegistration(updated, payment.paymentLink, payment.trackId);
     } catch (error) {
       await prisma.registration.update({
         where: { id: registration.id },
@@ -240,10 +274,7 @@ export class RegistrationService {
         ...payment.registration,
         payment,
       });
-      return {
-        registration: serializeRegistration(withWhatsapp),
-        refreshed: false,
-      };
+      return toPaymentSync(withWhatsapp);
     }
 
     const status = await this.payments.getPaymentStatus(trackId);
@@ -287,14 +318,7 @@ export class RegistrationService {
       registration = await this.sendWhatsappConfirmation(registration);
     }
 
-    return {
-      registration: serializeRegistration(registration),
-      refreshed: true,
-      provider: {
-        isPaid: status.isPaid,
-        status: status.status,
-      },
-    };
+    return toPaymentSync(registration);
   }
 
   async syncPaymentByRegistrationId(registrationId: string) {

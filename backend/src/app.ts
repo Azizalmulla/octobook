@@ -47,25 +47,26 @@ export async function buildApp(env: Env) {
   });
 
   app.setErrorHandler((error, request, reply) => {
+    // Frontend ApiError expects `{ error: string, fields?: Record<string, string> }`.
     if (error instanceof ZodError) {
+      const flat = error.flatten();
+      const fields: Record<string, string> = {};
+      for (const [key, messages] of Object.entries(flat.fieldErrors)) {
+        const list = messages as string[] | undefined;
+        if (list?.[0]) fields[key] = list[0];
+      }
       return reply.code(400).send({
-        success: false,
-        error: {
-          code: "VALIDATION_ERROR",
-          message: "Request validation failed",
-          details: error.flatten(),
-        },
+        error: "VALIDATION_FAILED",
+        fields,
+        message: "Request validation failed",
       });
     }
 
     if (error instanceof AppError) {
       return reply.code(error.statusCode).send({
-        success: false,
-        error: {
-          code: error.code ?? "APP_ERROR",
-          message: error.message,
-          details: error.details,
-        },
+        error: error.code ?? "APP_ERROR",
+        message: error.message,
+        details: error.details,
       });
     }
 
@@ -75,11 +76,8 @@ export async function buildApp(env: Env) {
       : 500;
 
     return reply.code(statusCode).send({
-      success: false,
-      error: {
-        code: "INTERNAL_ERROR",
-        message: statusCode >= 500 ? "Internal server error" : (error as Error).message,
-      },
+      error: "INTERNAL_ERROR",
+      message: statusCode >= 500 ? "Internal server error" : (error as Error).message,
     });
   });
 

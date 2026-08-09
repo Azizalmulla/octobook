@@ -9,27 +9,18 @@ export const registrationRoutes: FastifyPluginAsync<{ env: Env }> = async (app, 
   app.post("/", async (request, reply) => {
     const body = createRegistrationSchema.parse(request.body);
     const result = await service.create(body);
-    return reply.code(201).send({
-      success: true,
-      data: result,
-    });
+    return reply.code(201).send(result);
   });
 
   app.get("/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
     const registration = await service.getById(id);
-    return reply.send({
-      success: true,
-      data: registration,
-    });
+    return reply.send(registration);
   });
 
   app.post("/:id/sync-payment", async (request, reply) => {
     const { id } = request.params as { id: string };
     const result = await service.syncPaymentByRegistrationId(id);
-    return reply.send({
-      success: true,
-      data: result,
-    });
+    return reply.send(result);
   });
 };
