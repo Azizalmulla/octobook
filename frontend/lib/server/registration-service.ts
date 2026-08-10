@@ -16,22 +16,42 @@ function gatewayToProviderId(gateway: 'KNET' | 'CARD'): AiCollectionGatewayId {
   return gateway === 'CARD' ? 2 : 1
 }
 
-function formatSessionLabel(session: Session, locale: string): string {
+function sessionTimeZone(session: Session) {
+  return session.timezone || 'Asia/Kuwait'
+}
+
+function formatSessionDate(session: Session, locale: string): string {
   const dateLocale = locale === 'ar' ? 'ar-KW' : 'en-GB'
-  const date = new Intl.DateTimeFormat(dateLocale, {
+  return new Intl.DateTimeFormat(dateLocale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-    timeZone: session.timezone || 'Asia/Kuwait',
+    timeZone: sessionTimeZone(session),
   }).format(session.startsAt)
+}
+
+/** Hour:minute only — template already appends مساءً / PM. */
+function formatSessionTime(session: Session): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: sessionTimeZone(session),
+  }).formatToParts(session.startsAt)
+  const hour = parts.find((part) => part.type === 'hour')?.value ?? ''
+  const minute = parts.find((part) => part.type === 'minute')?.value ?? '00'
+  return `${hour}:${minute}`
+}
+
+function formatSessionLabel(session: Session, locale: string): string {
   const time = new Intl.DateTimeFormat('en-GB', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-    timeZone: session.timezone || 'Asia/Kuwait',
+    timeZone: sessionTimeZone(session),
   }).format(session.startsAt)
-  return `${date}, ${time} (GMT+3)`
+  return `${formatSessionDate(session, locale)}, ${time} (GMT+3)`
 }
 
 function formatSessionLabels(session: Session) {
@@ -92,7 +112,10 @@ export class RegistrationService {
       await this.whatsapp.sendRegistrationConfirmed({
         to: registration.whatsappNumber,
         name: registration.fullName,
-        sessionLabel: formatSessionLabel(registration.session, registration.locale),
+        registrationNumber: registration.id,
+        dateAr: formatSessionDate(registration.session, 'ar'),
+        dateEn: formatSessionDate(registration.session, 'en'),
+        time: formatSessionTime(registration.session),
         amountKwd: Number(registration.amountKwd).toFixed(3),
         locale: registration.locale,
       })

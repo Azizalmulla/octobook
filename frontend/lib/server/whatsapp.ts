@@ -4,7 +4,10 @@ import { AppError } from './errors'
 export type WhatsappTemplateParams = {
   to: string
   name: string
-  sessionLabel: string
+  registrationNumber: string
+  dateAr: string
+  dateEn: string
+  time: string
   amountKwd: string
   locale?: string
 }
@@ -17,12 +20,18 @@ function normalizeWhatsappTo(phone: string): string {
   return digits
 }
 
+function textParam(text: string) {
+  return { type: 'text' as const, text }
+}
+
 export class WhatsappTemplateClient {
   constructor(private readonly env: ServerEnv) {}
 
   private tokenFor(locale?: string): string {
     const arabic = this.env.WHATSAPP_TEMPLATE_TOKEN_AR.trim()
     const english = this.env.WHATSAPP_TEMPLATE_TOKEN.trim()
+    // Bilingual confirmation template lives on the primary token.
+    // AR token only used when explicitly set as a separate template.
     if (locale === 'ar' && arabic) return arabic
     return english
   }
@@ -36,11 +45,14 @@ export class WhatsappTemplateClient {
     if (!this.enabled || !token) {
       throw new AppError(
         503,
-        'WhatsApp is not configured. Set WHATSAPP_TEMPLATE_TOKEN (and WHATSAPP_TEMPLATE_TOKEN_AR for Arabic).',
+        'WhatsApp is not configured. Set WHATSAPP_TEMPLATE_TOKEN.',
         'WHATSAPP_NOT_CONFIGURED',
       )
     }
 
+    // Template body (AR + EN in one message):
+    // {{1}} name AR, {{2}} reg #, {{3}} date AR, {{4}} time, {{5}} amount
+    // {{6}} name EN, {{7}} reg #, {{8}} date EN, {{9}} time, {{10}} amount
     const body = {
       token,
       required: {
@@ -49,9 +61,16 @@ export class WhatsappTemplateClient {
           {
             type: 'body',
             parameters: [
-              { type: 'text', text: input.name },
-              { type: 'text', text: input.sessionLabel },
-              { type: 'text', text: input.amountKwd },
+              textParam(input.name),
+              textParam(input.registrationNumber),
+              textParam(input.dateAr),
+              textParam(input.time),
+              textParam(input.amountKwd),
+              textParam(input.name),
+              textParam(input.registrationNumber),
+              textParam(input.dateEn),
+              textParam(input.time),
+              textParam(input.amountKwd),
             ],
           },
         ],
