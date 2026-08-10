@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
-  REGISTRATION_FEE_KWD: z.string().default('0.100'),
+  REGISTRATION_FEE_KWD: z.string().default('0.300'),
   APP_URL: z.string().url().optional(),
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
   AI_COLLECTION_BASE_URL: z
