@@ -220,7 +220,7 @@ export function RegistrationFlow() {
         return
       }
 
-      window.location.href = `/return?trackId=${encodeURIComponent(created.trackId)}&registrationId=${encodeURIComponent(created.registrationId)}`
+      window.location.href = `/return/r/${encodeURIComponent(created.registrationId)}?trackId=${encodeURIComponent(created.trackId)}`
     } catch (error) {
       checkoutTab?.close()
       if (error instanceof ApiError) {

@@ -195,10 +195,9 @@ export class RegistrationService {
 
     try {
       const appUrl = getAppUrl(this.env)
-      const callbackUrl = `${appUrl}/api/payments/callback?registrationId=${registration.id}`
-      // Browser should land on the confirmation page (checkout tab). Keep registrationId
-      // because gateways often drop custom query params on the server callback URL.
-      const returnUrl = `${appUrl}/return?registrationId=${registration.id}`
+      // AI Collection strips ?query from callback_url — put the id in the path.
+      const callbackUrl = `${appUrl}/api/payments/callback/${registration.id}`
+      const returnUrl = `${appUrl}/return/r/${registration.id}`
       const payment = await this.payments.createPayment({
         amount,
         customerPhone: input.whatsappNumber,

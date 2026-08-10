@@ -44,7 +44,11 @@ function readStorage(key: string): string {
   }
 }
 
-export function ReturnResult() {
+export function ReturnResult({
+  forcedRegistrationId = '',
+}: {
+  forcedRegistrationId?: string
+}) {
   const { text, lang } = useLanguage()
   const params = useSearchParams()
   const [phase, setPhase] = useState<Phase>('checking')
@@ -60,11 +64,12 @@ export function ReturnResult() {
   }, [params])
 
   const registrationId = useMemo(() => {
+    if (forcedRegistrationId) return forcedRegistrationId
     const fromQuery =
       params.get('registrationId') ?? params.get('registration_id') ?? params.get('reference')
     if (fromQuery) return fromQuery
     return readStorage('octobook_registration_id') || readStorage('octobook_reference')
-  }, [params])
+  }, [forcedRegistrationId, params])
 
   useEffect(() => {
     setPaymentLink(readStorage('octobook_payment_link'))
