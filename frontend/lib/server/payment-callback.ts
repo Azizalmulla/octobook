@@ -29,7 +29,7 @@ function pickFromRecord(record: Record<string, unknown>, keys: string[]): string
 }
 
 const REGISTRATION_KEYS = ['registrationId', 'registration_id', 'udf', 'Udf', 'UserDefinedField']
-const TRACK_KEYS = ['trackId', 'track_id', 'TrackId', 'trackid', 'paymentId', 'PaymentId']
+const TRACK_KEYS = ['trackId', 'track_id', 'TrackId', 'trackid']
 
 async function readBodyRecord(request: Request): Promise<Record<string, unknown>> {
   const contentType = request.headers.get('content-type')?.toLowerCase() ?? ''

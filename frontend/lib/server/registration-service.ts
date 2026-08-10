@@ -195,9 +195,9 @@ export class RegistrationService {
 
     try {
       const appUrl = getAppUrl(this.env)
-      // AI Collection strips ?query from callback_url — put the id in the path.
-      const callbackUrl = `${appUrl}/api/payments/callback/${registration.id}`
-      const returnUrl = `${appUrl}/return/r/${registration.id}`
+      // Per AI Collection docs there is no return URL param — only trackId polling.
+      // Merchant callback is fixed; path/query ids get dropped. Keep bare callback host.
+      const callbackUrl = `${appUrl}/api/payments/callback`
       const payment = await this.payments.createPayment({
         amount,
         customerPhone: input.whatsappNumber,
@@ -206,7 +206,6 @@ export class RegistrationService {
         language: input.locale,
         paymentGatewaysId: gatewayToProviderId(input.paymentGateway),
         callbackUrl,
-        returnUrl,
         registrationId: registration.id,
       })
 

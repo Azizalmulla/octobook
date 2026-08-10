@@ -12,6 +12,7 @@ import { SectionShell } from './section_shell'
 import { Reveal } from './reveal'
 import { useLanguage } from './language_provider'
 import { ApiError, syncPayment, syncPaymentByRegistration } from '@/lib/api_client'
+import { readPaymentHandoff, savePaymentHandoff } from '@/lib/payment_handoff'
 import type { PaymentStatus, PaymentSync } from '@/lib/types'
 import type { CopyKey } from '@/lib/copy'
 
@@ -35,15 +36,6 @@ const NOTES: Record<PaymentStatus, CopyKey> = {
 const POLL_EVERY_MS = 3000
 const POLL_MAX_MS = 180000
 
-function readStorage(key: string): string {
-  if (typeof window === 'undefined') return ''
-  try {
-    return window.sessionStorage.getItem(key) ?? ''
-  } catch {
-    return ''
-  }
-}
-
 export function ReturnResult({
   forcedRegistrationId = '',
 }: {
@@ -56,24 +48,25 @@ export function ReturnResult({
   const [paymentLink, setPaymentLink] = useState('')
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const startedAt = useRef(0)
+  const handoff = useMemo(() => readPaymentHandoff(), [])
 
   const trackId = useMemo(() => {
     const fromQuery = params.get('trackId') ?? params.get('track_id')
     if (fromQuery) return fromQuery
-    return readStorage('octobook_track_id')
-  }, [params])
+    return handoff.trackId
+  }, [handoff.trackId, params])
 
   const registrationId = useMemo(() => {
     if (forcedRegistrationId) return forcedRegistrationId
     const fromQuery =
       params.get('registrationId') ?? params.get('registration_id') ?? params.get('reference')
     if (fromQuery) return fromQuery
-    return readStorage('octobook_registration_id') || readStorage('octobook_reference')
-  }, [forcedRegistrationId, params])
+    return handoff.registrationId
+  }, [forcedRegistrationId, handoff.registrationId, params])
 
   useEffect(() => {
-    setPaymentLink(readStorage('octobook_payment_link'))
-  }, [])
+    setPaymentLink(handoff.paymentLink)
+  }, [handoff.paymentLink])
 
   useEffect(() => {
     if (!trackId && !registrationId) {
@@ -93,14 +86,12 @@ export function ReturnResult({
         setResult(next)
         setPhase('result')
 
-        try {
-          if (next.trackId) window.sessionStorage.setItem('octobook_track_id', next.trackId)
-          if (next.reference) {
-            window.sessionStorage.setItem('octobook_registration_id', next.reference)
-            window.sessionStorage.setItem('octobook_reference', next.reference)
-          }
-        } catch {
-          // ignore storage failures
+        if (next.trackId || next.reference) {
+          savePaymentHandoff({
+            trackId: next.trackId || trackId,
+            registrationId: next.reference || registrationId,
+            paymentLink: handoff.paymentLink,
+          })
         }
 
         const elapsed = Date.now() - startedAt.current
@@ -125,7 +116,7 @@ export function ReturnResult({
       for (const timer of timers.current) clearTimeout(timer)
       timers.current = []
     }
-  }, [trackId, registrationId])
+  }, [handoff.paymentLink, registrationId, trackId])
 
   return (
     <SectionShell id="return" ground="dark" image="/payment_bg.png" priority>

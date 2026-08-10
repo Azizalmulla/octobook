@@ -13,6 +13,7 @@ import { useLanguage } from './language_provider'
 import { ApiError, createRegistration, fetchRegistrationOptions, fetchSessions } from '@/lib/api_client'
 import { FALLBACK_OPTIONS, FALLBACK_SESSIONS } from '@/lib/fallbacks'
 import { scrollToAndFocus } from '@/lib/scroll'
+import { savePaymentHandoff } from '@/lib/payment_handoff'
 import type { FormValues, RegistrationOptions, SessionItem } from '@/lib/types'
 import type { CopyKey } from '@/lib/copy'
 import {
@@ -201,21 +202,19 @@ export function RegistrationFlow() {
         return
       }
 
-      // Keep identifiers for /return. Gateway success URL currently opens a broken
-      // WhatsApp link (merchant setting), so we stay on /return and poll instead.
-      try {
-        window.sessionStorage.setItem('octobook_track_id', created.trackId)
-        window.sessionStorage.setItem('octobook_registration_id', created.registrationId)
-        window.sessionStorage.setItem('octobook_reference', created.reference)
-        window.sessionStorage.setItem('octobook_payment_link', created.paymentLink)
-      } catch {
-        // storage is not available, the query string carries the identifier instead
-      }
+      // AI Collection has no return URL in their API — only trackId + status poll.
+      // Merchant callback is a fixed bare URL, so we persist ids in localStorage
+      // (shared across tabs) for the tab that comes back without query params.
+      savePaymentHandoff({
+        trackId: created.trackId,
+        registrationId: created.registrationId,
+        paymentLink: created.paymentLink,
+      })
 
       if (checkoutTab && !checkoutTab.closed) {
         checkoutTab.location.href = created.paymentLink
       } else {
-        // Popup blocked — fall back to same-tab checkout; return_url brings them back.
+        // Popup blocked — same-tab checkout; localStorage recovers on callback return.
         window.location.href = created.paymentLink
         return
       }

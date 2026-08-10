@@ -180,17 +180,11 @@ export class AiCollectionClient {
     if (input.customerEmail) body.customer_email = input.customerEmail
     if (input.language) body.language = input.language
     if (input.paymentGatewaysId) body.Payment_gateways_id = input.paymentGatewaysId
-    // Override merchant defaults: server callback for sync, browser return for /return UI.
-    const browserReturn = input.returnUrl || input.callbackUrl
+    // Official AI Collection create_payment has no callback/return params.
+    // Merchant dashboard callback is a fixed URL; we still send callback_url so
+    // the browser lands back on our domain after pay (ids recovered via localStorage).
     if (input.callbackUrl) {
       body.callback_url = input.callbackUrl
-      body.CallbackUrl = input.callbackUrl
-    }
-    if (browserReturn) {
-      body.return_url = browserReturn
-      body.success_url = browserReturn
-      body.ReturnUrl = browserReturn
-      body.SuccessUrl = browserReturn
     }
     // Do not send udf/UserDefinedField: AI Collection requires 1-15 alphanumeric chars only.
 
