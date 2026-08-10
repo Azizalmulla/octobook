@@ -185,8 +185,8 @@ export const copy = {
   },
   returnNeutralHeading: { en: 'Nothing to show on this page.', ar: 'لا يوجد ما يُعرض في هذه الصفحة.' },
   returnNeutralNote: {
-    en: 'This page reports the result of a payment. Return to the form to register.',
-    ar: 'تعرض هذه الصفحة نتيجة عملية دفع. عد إلى النموذج للتسجيل.',
+    en: 'If you already paid, check WhatsApp for your confirmation. Otherwise return to the form to register.',
+    ar: 'إذا كنت قد دفعت بالفعل، تحقق من واتساب للتأكيد. وإلا فعد إلى النموذج للتسجيل.',
   },
   returnBackAction: { en: 'Back to the form', ar: 'العودة إلى النموذج' },
 

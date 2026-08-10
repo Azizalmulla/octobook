@@ -201,6 +201,7 @@ export function RegistrationFlow() {
       // WhatsApp link (merchant setting), so we stay on /return and poll instead.
       try {
         window.sessionStorage.setItem('octobook_track_id', created.trackId)
+        window.sessionStorage.setItem('octobook_registration_id', created.registrationId)
         window.sessionStorage.setItem('octobook_reference', created.reference)
         window.sessionStorage.setItem('octobook_payment_link', created.paymentLink)
       } catch {
@@ -208,7 +209,7 @@ export function RegistrationFlow() {
       }
 
       window.open(created.paymentLink, '_blank', 'noopener,noreferrer')
-      window.location.href = `/return?trackId=${encodeURIComponent(created.trackId)}`
+      window.location.href = `/return?trackId=${encodeURIComponent(created.trackId)}&registrationId=${encodeURIComponent(created.registrationId)}`
     } catch (error) {
       if (error instanceof ApiError) {
         const mapped = mapServerFields(error.fields)

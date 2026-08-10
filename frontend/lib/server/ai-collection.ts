@@ -10,8 +10,10 @@ export type CreatePaymentInput = {
   customerEmail?: string
   language?: 'en' | 'ar'
   paymentGatewaysId?: AiCollectionGatewayId
-  /** Where the gateway should send the customer after pay */
+  /** Server / browser notify URL (sync + WhatsApp) */
   callbackUrl?: string
+  /** Browser landing page after pay (confirmation UI) */
+  returnUrl?: string
   registrationId?: string
 }
 
@@ -178,12 +180,17 @@ export class AiCollectionClient {
     if (input.customerEmail) body.customer_email = input.customerEmail
     if (input.language) body.language = input.language
     if (input.paymentGatewaysId) body.Payment_gateways_id = input.paymentGatewaysId
-    // AI Collection merchant default currently points at WhatsApp — override per payment.
+    // Override merchant defaults: server callback for sync, browser return for /return UI.
+    const browserReturn = input.returnUrl || input.callbackUrl
     if (input.callbackUrl) {
       body.callback_url = input.callbackUrl
-      body.return_url = input.callbackUrl
-      body.success_url = input.callbackUrl
       body.CallbackUrl = input.callbackUrl
+    }
+    if (browserReturn) {
+      body.return_url = browserReturn
+      body.success_url = browserReturn
+      body.ReturnUrl = browserReturn
+      body.SuccessUrl = browserReturn
     }
     // Do not send udf/UserDefinedField: AI Collection requires 1-15 alphanumeric chars only.
 

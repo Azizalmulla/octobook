@@ -11,7 +11,7 @@ import { GlassCard } from './glass_card'
 import { SectionShell } from './section_shell'
 import { Reveal } from './reveal'
 import { useLanguage } from './language_provider'
-import { ApiError, syncPayment } from '@/lib/api_client'
+import { ApiError, syncPayment, syncPaymentByRegistration } from '@/lib/api_client'
 import type { PaymentStatus, PaymentSync } from '@/lib/types'
 import type { CopyKey } from '@/lib/copy'
 
@@ -35,6 +35,15 @@ const NOTES: Record<PaymentStatus, CopyKey> = {
 const POLL_EVERY_MS = 3000
 const POLL_MAX_MS = 180000
 
+function readStorage(key: string): string {
+  if (typeof window === 'undefined') return ''
+  try {
+    return window.sessionStorage.getItem(key) ?? ''
+  } catch {
+    return ''
+  }
+}
+
 export function ReturnResult() {
   const { text, lang } = useLanguage()
   const params = useSearchParams()
@@ -47,23 +56,22 @@ export function ReturnResult() {
   const trackId = useMemo(() => {
     const fromQuery = params.get('trackId') ?? params.get('track_id')
     if (fromQuery) return fromQuery
-    try {
-      return window.sessionStorage.getItem('octobook_track_id') ?? ''
-    } catch {
-      return ''
-    }
+    return readStorage('octobook_track_id')
+  }, [params])
+
+  const registrationId = useMemo(() => {
+    const fromQuery =
+      params.get('registrationId') ?? params.get('registration_id') ?? params.get('reference')
+    if (fromQuery) return fromQuery
+    return readStorage('octobook_registration_id') || readStorage('octobook_reference')
   }, [params])
 
   useEffect(() => {
-    try {
-      setPaymentLink(window.sessionStorage.getItem('octobook_payment_link') ?? '')
-    } catch {
-      setPaymentLink('')
-    }
+    setPaymentLink(readStorage('octobook_payment_link'))
   }, [])
 
   useEffect(() => {
-    if (!trackId) {
+    if (!trackId && !registrationId) {
       setPhase('neutral')
       return
     }
@@ -73,10 +81,22 @@ export function ReturnResult() {
 
     const run = async () => {
       try {
-        const next = await syncPayment(trackId)
+        const next = trackId
+          ? await syncPayment(trackId)
+          : await syncPaymentByRegistration(registrationId)
         if (!live) return
         setResult(next)
         setPhase('result')
+
+        try {
+          if (next.trackId) window.sessionStorage.setItem('octobook_track_id', next.trackId)
+          if (next.reference) {
+            window.sessionStorage.setItem('octobook_registration_id', next.reference)
+            window.sessionStorage.setItem('octobook_reference', next.reference)
+          }
+        } catch {
+          // ignore storage failures
+        }
 
         const elapsed = Date.now() - startedAt.current
         if (next.status === 'PENDING_PAYMENT' && elapsed < POLL_MAX_MS) {
@@ -100,7 +120,7 @@ export function ReturnResult() {
       for (const timer of timers.current) clearTimeout(timer)
       timers.current = []
     }
-  }, [trackId])
+  }, [trackId, registrationId])
 
   return (
     <SectionShell id="return" ground="dark" image="/payment_bg.png" priority>

@@ -126,3 +126,10 @@ export async function syncPayment(trackId: string): Promise<PaymentSync> {
     method: 'POST',
   })
 }
+
+export async function syncPaymentByRegistration(registrationId: string): Promise<PaymentSync> {
+  return request<PaymentSync>({
+    path: `/api/payments/registration/${encodeURIComponent(registrationId)}/sync`,
+    method: 'POST',
+  })
+}
