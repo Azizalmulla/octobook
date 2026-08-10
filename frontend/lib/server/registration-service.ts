@@ -93,7 +93,8 @@ export class RegistrationService {
         to: registration.whatsappNumber,
         name: registration.fullName,
         sessionLabel: formatSessionLabel(registration.session, registration.locale),
-        amountKwd: Number(registration.amountKwd).toFixed(0),
+        amountKwd: Number(registration.amountKwd).toFixed(3),
+        locale: registration.locale,
       })
 
       return prisma.registration.update({

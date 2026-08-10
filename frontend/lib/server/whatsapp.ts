@@ -6,6 +6,7 @@ export type WhatsappTemplateParams = {
   name: string
   sessionLabel: string
   amountKwd: string
+  locale?: string
 }
 
 function normalizeWhatsappTo(phone: string): string {
@@ -19,21 +20,29 @@ function normalizeWhatsappTo(phone: string): string {
 export class WhatsappTemplateClient {
   constructor(private readonly env: ServerEnv) {}
 
+  private tokenFor(locale?: string): string {
+    const arabic = this.env.WHATSAPP_TEMPLATE_TOKEN_AR.trim()
+    const english = this.env.WHATSAPP_TEMPLATE_TOKEN.trim()
+    if (locale === 'ar' && arabic) return arabic
+    return english
+  }
+
   private get enabled(): boolean {
-    return Boolean(this.env.WHATSAPP_TEMPLATE_TOKEN.trim())
+    return Boolean(this.env.WHATSAPP_TEMPLATE_TOKEN.trim() || this.env.WHATSAPP_TEMPLATE_TOKEN_AR.trim())
   }
 
   async sendRegistrationConfirmed(input: WhatsappTemplateParams): Promise<{ raw: unknown }> {
-    if (!this.enabled) {
+    const token = this.tokenFor(input.locale)
+    if (!this.enabled || !token) {
       throw new AppError(
         503,
-        'WhatsApp is not configured. Set WHATSAPP_TEMPLATE_TOKEN.',
+        'WhatsApp is not configured. Set WHATSAPP_TEMPLATE_TOKEN (and WHATSAPP_TEMPLATE_TOKEN_AR for Arabic).',
         'WHATSAPP_NOT_CONFIGURED',
       )
     }
 
     const body = {
-      token: this.env.WHATSAPP_TEMPLATE_TOKEN,
+      token,
       required: {
         to: normalizeWhatsappTo(input.to),
         data: [

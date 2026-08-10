@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
-  REGISTRATION_FEE_KWD: z.string().default('1.000'),
+  REGISTRATION_FEE_KWD: z.string().default('0.100'),
   APP_URL: z.string().url().optional(),
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
   AI_COLLECTION_BASE_URL: z
@@ -16,6 +16,7 @@ const envSchema = z.object({
     .url()
     .default('https://app.ai-octopus.com/template/sent'),
   WHATSAPP_TEMPLATE_TOKEN: z.string().optional().default(''),
+  WHATSAPP_TEMPLATE_TOKEN_AR: z.string().optional().default(''),
 })
 
 export type ServerEnv = z.infer<typeof envSchema>
