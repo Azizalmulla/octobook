@@ -14,6 +14,7 @@ export function PaymentBlock({
   submitting,
   closed,
   failure,
+  sessionLabel,
   onPay,
 }: {
   fee: Fee
@@ -21,55 +22,65 @@ export function PaymentBlock({
   submitting: boolean
   closed: boolean
   failure?: CopyKey
+  sessionLabel?: string
   onPay: () => void
 }) {
   const { text, lang } = useLanguage()
-  const disabled = !gateOpen || closed
+  const blocked = closed || submitting
 
   return (
-    <GlassCard className="mx-auto flex max-w-2xl flex-col items-center gap-6 p-8 md:p-10">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <span className="price text-4xl md:text-5xl">
-          {lang === 'ar' ? fee.labelAr : fee.labelEn}
-        </span>
-        <span className="muted_on_dark text-sm">{text('paymentSeatLine')}</span>
+    <GlassCard tone="light" className="checkout_panel mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 md:p-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-8">
+        <div className="flex flex-col gap-2 text-start">
+          <span className="eyebrow">{text('paymentEyebrow')}</span>
+          <span className="price text-4xl md:text-5xl">
+            {lang === 'ar' ? fee.labelAr : fee.labelEn}
+          </span>
+          <span className="muted_on_light text-sm">{text('paymentSeatLine')}</span>
+          {sessionLabel ? (
+            <p className="value_strong mt-1 text-sm font-medium">{sessionLabel}</p>
+          ) : (
+            <p className="muted_on_light mt-1 text-sm">{text('paymentNoSession')}</p>
+          )}
+        </div>
+
+        <div className="flex w-full flex-col items-stretch gap-3 md:w-auto md:min-w-[16rem] md:items-end">
+          <button
+            type="button"
+            className="action flex w-full items-center justify-center gap-2 md:w-auto"
+            aria-disabled={blocked}
+            disabled={blocked}
+            onClick={onPay}
+          >
+            {submitting ? (
+              <>
+                <IconLoader2 size={18} stroke={1.8} className="spin" aria-hidden="true" />
+                {text('paymentWorking')}
+              </>
+            ) : (
+              <>
+                <IconLock size={18} stroke={1.8} aria-hidden="true" />
+                {text('paymentAction')}
+              </>
+            )}
+          </button>
+          <p className="muted_on_light max-w-xs text-pretty text-xs leading-relaxed md:text-end">
+            {closed
+              ? text('registrationClosed')
+              : gateOpen
+                ? text('paymentReadyLine')
+                : text('paymentGateLine')}
+          </p>
+        </div>
       </div>
 
-      <p className="muted_on_dark max-w-md text-pretty text-center text-sm leading-relaxed">
-        {closed
-          ? text('registrationClosed')
-          : gateOpen
-            ? text('paymentReadyLine')
-            : text('paymentGateLine')}
-      </p>
-
-      <button
-        type="button"
-        className="action flex items-center gap-2"
-        aria-disabled={disabled || submitting}
-        disabled={disabled || submitting}
-        onClick={onPay}
-      >
-        {submitting ? (
-          <>
-            <IconLoader2 size={18} stroke={1.8} className="spin" aria-hidden="true" />
-            {text('paymentWorking')}
-          </>
-        ) : (
-          <>
-            <IconLock size={18} stroke={1.8} aria-hidden="true" />
-            {text('paymentAction')}
-          </>
-        )}
-      </button>
-
       {failure ? (
-        <p className="text-center text-sm font-medium" role="alert">
+        <p className="text-sm font-medium" role="alert">
           {text(failure)}
         </p>
       ) : null}
 
-      <p className="muted_on_dark max-w-sm text-pretty text-center text-xs leading-relaxed">
+      <p className="muted_on_light max-w-xl text-pretty text-xs leading-relaxed">
         {text('paymentSecureNote')}
       </p>
     </GlassCard>

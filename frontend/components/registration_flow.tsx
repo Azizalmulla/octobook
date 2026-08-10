@@ -12,6 +12,7 @@ import { PaymentBlock } from './payment_block'
 import { useLanguage } from './language_provider'
 import { ApiError, createRegistration, fetchRegistrationOptions, fetchSessions } from '@/lib/api_client'
 import { FALLBACK_OPTIONS, FALLBACK_SESSIONS } from '@/lib/fallbacks'
+import { scrollToAndFocus } from '@/lib/scroll'
 import type { FormValues, RegistrationOptions, SessionItem } from '@/lib/types'
 import type { CopyKey } from '@/lib/copy'
 import {
@@ -40,6 +41,18 @@ const FAILURE_COPY: Record<string, CopyKey> = {
 function newKey(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
   return `key_${Date.now()}_${Math.random().toString(36).slice(2)}`
+}
+
+function firstIssueId(input: {
+  sessionId: string
+  sessionSelectable: boolean
+  fieldErrors: FieldErrorMap
+}): string | null {
+  if (!input.sessionId || !input.sessionSelectable) return 'session_select'
+  for (const key of FIELD_KEYS) {
+    if (input.fieldErrors[key]) return key
+  }
+  return null
 }
 
 export function RegistrationFlow() {
@@ -114,6 +127,11 @@ export function RegistrationFlow() {
     sessions.every((item) => !item.isSelectable || item.seatsRemaining <= 0)
 
   const gateOpen = isGateOpen({ values, sessionId, sessionSelectable, submitting })
+  const sessionLabel = selectedSession
+    ? lang === 'ar'
+      ? selectedSession.labelAr
+      : selectedSession.labelEn
+    : undefined
 
   const handleChange = useCallback(
     <K extends keyof FormValues>(key: K, next: FormValues[K]) => {
@@ -134,11 +152,28 @@ export function RegistrationFlow() {
     setTouched((current) => ({ ...current, [key]: true }))
   }, [])
 
+  const revealIssues = useCallback(
+    (fieldErrors: FieldErrorMap) => {
+      const target = firstIssueId({
+        sessionId,
+        sessionSelectable,
+        fieldErrors,
+      })
+      if (target) scrollToAndFocus(target)
+    },
+    [sessionId, sessionSelectable],
+  )
+
   const handlePay = useCallback(async () => {
     setTouched(Object.fromEntries(FIELD_KEYS.map((key) => [key, true])))
     setSessionTouched(true)
 
-    if (!isGateOpen({ values, sessionId, sessionSelectable, submitting })) return
+    const fieldErrors = validateAll(values)
+    if (!isGateOpen({ values, sessionId, sessionSelectable, submitting: false })) {
+      setFailure('errorValidationFailed')
+      revealIssues(fieldErrors)
+      return
+    }
 
     const snapshot = JSON.stringify({ values, sessionId })
     if (!idempotency.current || idempotency.current.snapshot !== snapshot) {
@@ -176,14 +211,18 @@ export function RegistrationFlow() {
       window.location.href = `/return?trackId=${encodeURIComponent(created.trackId)}`
     } catch (error) {
       if (error instanceof ApiError) {
-        setServerErrors(mapServerFields(error.fields))
+        const mapped = mapServerFields(error.fields)
+        setServerErrors(mapped)
         setFailure(FAILURE_COPY[error.code] ?? 'errorGeneric')
+        if (Object.keys(mapped).length > 0) {
+          revealIssues({ ...validateAll(values), ...mapped })
+        }
       } else {
         setFailure('errorGeneric')
       }
       setSubmitting(false)
     }
-  }, [lang, sessionId, sessionSelectable, submitting, values])
+  }, [lang, revealIssues, sessionId, sessionSelectable, values])
 
   return (
     <>
@@ -224,22 +263,24 @@ export function RegistrationFlow() {
             />
           </GlassCard>
         </Reveal>
-      </SectionShell>
 
-      <SectionShell id="payment" ground="dark" image="/payment_bg.png">
-        <Reveal className="mb-8 text-center">
-          <h2 className="heading text-3xl md:text-4xl">{text('paymentHeading')}</h2>
-        </Reveal>
-        <Reveal delay={90}>
-          <PaymentBlock
-            fee={options.fee}
-            gateOpen={gateOpen}
-            submitting={submitting}
-            closed={registrationClosed}
-            failure={failure}
-            onPay={() => void handlePay()}
-          />
-        </Reveal>
+        <div id="payment" className="mt-10">
+          <Reveal delay={140}>
+            <div className="mb-5 flex flex-col gap-2">
+              <h2 className="heading text-2xl md:text-3xl">{text('paymentHeading')}</h2>
+              <p className="muted_on_light text-sm">{text('paymentHelper')}</p>
+            </div>
+            <PaymentBlock
+              fee={options.fee}
+              gateOpen={gateOpen}
+              submitting={submitting}
+              closed={registrationClosed}
+              failure={failure}
+              sessionLabel={sessionLabel}
+              onPay={() => void handlePay()}
+            />
+          </Reveal>
+        </div>
       </SectionShell>
     </>
   )

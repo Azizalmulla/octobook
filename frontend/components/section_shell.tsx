@@ -46,7 +46,7 @@ export function SectionShell({
           ground === 'dark' ? 'scrim_dark' : 'scrim_light',
         )}
       />
-      <div className="relative mx-auto w-full max-w-6xl px-5 py-24 md:px-8 md:py-32">{children}</div>
+      <div className="relative mx-auto w-full max-w-6xl px-5 py-20 md:px-8 md:py-24">{children}</div>
     </section>
   )
 }

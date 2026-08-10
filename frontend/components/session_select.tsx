@@ -45,7 +45,7 @@ export function SessionSelect({
   }
 
   return (
-    <div>
+    <div id="session_select">
       <div
         role="radiogroup"
         aria-label={text('sessionsHeading')}

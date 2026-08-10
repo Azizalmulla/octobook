@@ -373,6 +373,11 @@ select.field_control {
   letter-spacing: -0.02em;
 }
 
+.checkout_panel {
+  border: 1px solid color-mix(in srgb, var(--brand) 28%, transparent);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--shade) 8%, transparent);
+}
+
 html[lang='ar'] .price {
   letter-spacing: normal;
 }

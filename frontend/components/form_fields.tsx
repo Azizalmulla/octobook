@@ -158,6 +158,7 @@ export function RadioRow({
 }) {
   return (
     <fieldset
+      id={id}
       aria-invalid={error ? true : undefined}
       aria-describedby={error ? `${id}_error` : undefined}
     >

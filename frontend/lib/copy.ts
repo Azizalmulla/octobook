@@ -103,15 +103,24 @@ export const copy = {
     ar: 'اختر موعداً واحداً متاحاً بالأعلى.',
   },
 
-  paymentHeading: { en: 'Fee and Payment', ar: 'الرسوم والدفع' },
+  paymentHeading: { en: 'Confirm and pay', ar: 'تأكيد والدفع' },
+  paymentEyebrow: { en: 'Checkout', ar: 'إتمام التسجيل' },
+  paymentHelper: {
+    en: 'Review your fee and session, then confirm your seat.',
+    ar: 'راجع الرسوم والموعد ثم أكّد مقعدك.',
+  },
   paymentSeatLine: { en: 'One seat, one live session.', ar: 'مقعد واحد، جلسة مباشرة واحدة.' },
+  paymentNoSession: {
+    en: 'Select a session above to continue.',
+    ar: 'اختر موعداً بالأعلى للمتابعة.',
+  },
   paymentGateLine: {
-    en: 'All fields are required before payment opens.',
-    ar: 'جميع الحقول مطلوبة قبل أن يُفتح الدفع.',
+    en: 'Complete every field above, then press pay. We will jump to anything missing.',
+    ar: 'أكمل كل الحقول بالأعلى ثم اضغط ادفع. سننقلك إلى أي نقص.',
   },
   paymentReadyLine: {
-    en: 'Your details are complete. Payment opens on the secure gateway.',
-    ar: 'بياناتك مكتملة. سيُفتح الدفع على بوابة الدفع الآمنة.',
+    en: 'Ready. Payment opens on the secure gateway.',
+    ar: 'جاهز. سيُفتح الدفع على بوابة الدفع الآمنة.',
   },
   paymentAction: { en: 'Pay and Confirm Seat', ar: 'ادفع وأكّد المقعد' },
   paymentWorking: { en: 'Opening payment', ar: 'جارٍ فتح الدفع' },
