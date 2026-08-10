@@ -183,6 +183,9 @@ export function RegistrationFlow() {
     setSubmitting(true)
     setFailure(undefined)
 
+    // Open the tab during the click gesture so Safari/Chrome don't block it after await.
+    const checkoutTab = window.open('about:blank', '_blank')
+
     try {
       const created = await createRegistration({
         values,
@@ -192,6 +195,7 @@ export function RegistrationFlow() {
       })
 
       if (!created?.paymentLink) {
+        checkoutTab?.close()
         setFailure('errorPaymentOpen')
         setSubmitting(false)
         return
@@ -208,9 +212,17 @@ export function RegistrationFlow() {
         // storage is not available, the query string carries the identifier instead
       }
 
-      window.open(created.paymentLink, '_blank', 'noopener,noreferrer')
+      if (checkoutTab && !checkoutTab.closed) {
+        checkoutTab.location.href = created.paymentLink
+      } else {
+        // Popup blocked — fall back to same-tab checkout; return_url brings them back.
+        window.location.href = created.paymentLink
+        return
+      }
+
       window.location.href = `/return?trackId=${encodeURIComponent(created.trackId)}&registrationId=${encodeURIComponent(created.registrationId)}`
     } catch (error) {
+      checkoutTab?.close()
       if (error instanceof ApiError) {
         const mapped = mapServerFields(error.fields)
         setServerErrors(mapped)
