@@ -25,7 +25,7 @@ export function Hero() {
   const { text } = useLanguage()
 
   return (
-    <div className="flex min-h-[88svh] flex-col justify-end gap-12 pb-6 pt-28 md:grid md:grid-cols-[1.15fr_1fr] md:items-end md:gap-12 md:pb-10 md:pt-32">
+    <div className="flex min-h-[78svh] flex-col justify-center gap-10 pb-8 pt-20 md:grid md:grid-cols-[1.15fr_1fr] md:items-center md:gap-12 md:pb-12 md:pt-24">
       <div className="order-2 flex flex-col items-center gap-7 text-center md:order-1 md:items-start md:text-start">
         <Reveal>
           <GlassCard className="px-4 py-2">
