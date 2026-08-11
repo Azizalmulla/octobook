@@ -33,10 +33,10 @@ export const FALLBACK_SESSIONS: SessionItem[] = [
 ]
 
 export const FALLBACK_FEE: Fee = {
-  amount: '1.000',
+  amount: '40.000',
   currency: 'KWD',
-  labelEn: 'KWD 1',
-  labelAr: '١ د.ك',
+  labelEn: 'KWD 40',
+  labelAr: '٤٠ د.ك',
 }
 
 export const FALLBACK_BUSINESS_TYPES: OptionItem[] = [
